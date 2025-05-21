@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Financiamento Interativo com Sliders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .input-spinner::-webkit-outer-spin-button,
+        .input-spinner::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .input-spinner {
+            -moz-appearance: textfield; /* Firefox */
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .bank-entry {
+            display: flex;
+            gap: 0.5rem; /* 8px */
+            align-items: center;
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .bank-entry input {
+            flex-grow: 1;
+        }
+        /* Custom slider appearance */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0; /* slate-200 */
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.9;
+            transition: opacity .15s ease-in-out;
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #0ea5e9; /* sky-500 */
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #0ea5e9; /* sky-500 */
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-700 min-h-screen flex flex-col items-center justify-center p-4 py-8">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-5xl transform transition-all duration-500 ease-in-out">
+        <h1 class="text-3xl font-bold text-center text-slate-800 mb-8">Simulador de Financiamento Interativo</h1>
+
+        <h2 class="text-2xl font-semibold text-slate-700 mb-4 border-b pb-2">Dados Principais da Simulação</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 mb-6">
+            <div>
+                <label for="valorBem" class="block text-sm font-medium text-slate-700 mb-1">Valor do Bem (R$): <span id="valorBemDisplay" class="font-semibold text-sky-600"></span></label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="number" id="valorBem" step="1000" min="1000" max="2000000" placeholder="Ex: 50000" class="input-spinner block w-32 rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-300 focus:ring-opacity-50 p-3" value="50000">
+                    <input type="range" id="valorBemSlider" min="1000" max="2000000" step="1000" value="50000" class="flex-grow">
+                </div>
+            </div>
+            <div>
+                <label for="valorEntrada" class="block text-sm font-medium text-slate-700 mb-1">Valor da Entrada (R$): <span id="valorEntradaDisplay" class="font-semibold text-sky-600"></span></label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="number" id="valorEntrada" step="100" min="0" placeholder="Ex: 10000" class="input-spinner block w-32 rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-300 focus:ring-opacity-50 p-3" value="10000">
+                    <input type="range" id="valorEntradaSlider" min="0" step="100" value="10000" class="flex-grow">
+                </div>
+            </div>
+            <div>
+                <label for="taxaJurosPrincipal" class="block text-sm font-medium text-slate-700 mb-1">Taxa de Juros Mensal Principal (%): <span id="taxaJurosPrincipalDisplay" class="font-semibold text-sky-600"></span></label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="number" id="taxaJurosPrincipal" step="0.01" min="0" max="10" placeholder="Ex: 1.5" class="input-spinner block w-28 rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-300 focus:ring-opacity-50 p-3" value="1.2">
+                    <input type="range" id="taxaJurosPrincipalSlider" min="0" max="10" step="0.01" value="1.2" class="flex-grow">
+                </div>
+            </div>
+            <div>
+                <label for="prazoMeses" class="block text-sm font-medium text-slate-700 mb-1">Prazo (meses): <span id="prazoMesesDisplay" class="font-semibold text-sky-600"></span></label>
+                <div class="flex items-center space-x-3 mt-1">
+                    <input type="number" id="prazoMeses" step="1" min="1" max="480" placeholder="Ex: 36" class="input-spinner block w-28 rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-300 focus:ring-opacity-50 p-3" value="36">
+                    <input type="range" id="prazoMesesSlider" min="1" max="480" step="1" value="36" class="flex-grow">
+                </div>
+            </div>
+            <div class="md:col-span-2">
+                <label for="sistemaAmortizacao" class="block text-sm font-medium text-slate-700 mb-1">Sistema de Amortização (para todas simulações):</label>
+                <select id="sistemaAmortizacao" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:border-sky-500 focus:ring focus:ring-sky-300 focus:ring-opacity-50 p-3">
+                    <option value="price" selected>Tabela Price (Parcelas Fixas)</option>
+                    <option value="sac">SAC (Amortização Constante)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-8 p-6 bg-slate-50 rounded-lg shadow">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-4 border-b pb-2">Comparar com Outras Taxas/Bancos</h2>
+            <div id="bancosAdicionaisContainer" class="space-y-3 mb-4">
+                </div>
+            <button id="addBancoBtn" type="button" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition duration-150 ease-in-out">
+                + Adicionar Taxa/Banco
+            </button>
+        </div>
+
+        <button id="calcularBtn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-75 mb-8">
+            Calcular Todas as Simulações
+        </button>
+
+        <div id="mensagemErro" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+            <strong class="font-bold">Atenção:</strong>
+            <span class="block sm:inline" id="mensagemErroTexto"></span>
+        </div>
+        
+        <div id="resultadosDiv" class="mt-6 space-y-8 hidden">
+            <div class="bg-slate-100 p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4 text-center border-b pb-2">Resultado da Simulação Principal (<span id="sistemaSelecionadoInfo"></span>)</h2>
+                <p class="text-sm text-center text-slate-600 mb-3">Baseado na Taxa de Juros Principal: <span id="taxaPrincipalInfo" class="font-semibold"></span>%</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <p><strong class="text-slate-600">Parcela Inicial:</strong> <span id="valorParcelaInicial" class="font-mono text-sky-700"></span></p>
+                    <p id="parcelaFinalContainer" class="hidden"><strong class="text-slate-600">Parcela Final (SAC):</strong> <span id="valorParcelaFinal" class="font-mono text-sky-700"></span></p>
+                    <p><strong class="text-slate-600">Valor Financiado:</strong> <span id="totalFinanciado" class="font-mono text-sky-700"></span></p>
+                    <p><strong class="text-slate-600">Total de Juros Pagos:</strong> <span id="totalJuros" class="font-mono text-red-600"></span></p>
+                    <p><strong class="text-slate-600">Custo Efetivo Total (CET) Aproximado*:</strong> <span id="cetAproximado" class="font-mono text-sky-700"></span></p>
+                </div>
+                 <p class="text-xs text-slate-500 mt-3 text-center">* O CET considera apenas a taxa de juros informada. Custos adicionais como seguros e taxas não estão inclusos.</p>
+            </div>
+
+            <div class="bg-slate-100 p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold text-slate-700 mb-4 text-center border-b pb-2">Comparativo: Financiado vs. À Vista (Simulação Principal)</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <p><strong class="text-slate-600">Custo Total (À Vista):</strong> <span id="custoAVista" class="font-mono text-green-600"></span></p>
+                    <p><strong class="text-slate-600">Custo Total (Financiado):</strong> <span id="montanteAcumulado" class="font-mono text-red-600"></span></p>
+                    <p><strong class="text-slate-600">Diferença (Financiado - À Vista):</strong> <span id="diferencaCusto" class="font-mono text-red-600"></span></p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">Gráfico Comparativo de Custos Totais (Simulação Principal)</h3>
+                <div class="relative h-72 md:h-96">
+                    <canvas id="comparativoGraficoCanvas"></canvas>
+                </div>
+            </div>
+
+            <div id="comparativoBancosDiv" class="mt-8 space-y-6 hidden">
+                <div class="bg-sky-50 p-6 rounded-lg shadow">
+                    <h2 class="text-2xl font-semibold text-sky-800 mb-4 text-center border-b border-sky-200 pb-2">Comparativo Detalhado entre Taxas/Bancos</h2>
+                    <div class="overflow-x-auto table-container">
+                        <table class="min-w-full divide-y divide-sky-200">
+                            <thead class="bg-sky-100">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider">Banco/Taxa</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider">Taxa Mensal (%)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider">Parcela Inicial (R$)</th>
+                                    <th id="colParcelaFinalSac" scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider hidden">Parcela Final (SAC) (R$)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider">Total Juros (R$)</th>
+                                    <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-sky-700 uppercase tracking-wider">Custo Total Financiado (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaComparativoBancosBody" class="bg-white divide-y divide-sky-200">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-slate-200">
+                    <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">Gráfico Comparativo de Custo Total Financiado por Banco/Taxa</h3>
+                    <div class="relative h-72 md:h-96">
+                        <canvas id="graficoComparativoBancosCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">Gráfico de Evolução do Financiamento (Simulação Principal)</h3>
+                <div class="relative h-72 md:h-96">
+                    <canvas id="evolucaoFinanciamentoCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-700 mb-4 text-center">Tabela de Amortização Detalhada (Simulação Principal)</h3>
+                <div class="table-container">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Mês</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Parcela (R$)</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Juros (R$)</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Amortização (R$)</th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Saldo Devedor (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaAmortizacaoBody" class="bg-white divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+         <footer class="text-center text-xs text-slate-500 mt-8">
+            Simulador para fins ilustrativos. Condições reais podem variar.
+        </footer>
+    </div>
+
+    <script>
+        // Elementos DOM Principais e Sliders
+        const valorBemEl = document.getElementById('valorBem');
+        const valorBemSliderEl = document.getElementById('valorBemSlider');
+        const valorBemDisplaySpan = document.getElementById('valorBemDisplay');
+
+        const valorEntradaEl = document.getElementById('valorEntrada');
+        const valorEntradaSliderEl = document.getElementById('valorEntradaSlider');
+        const valorEntradaDisplaySpan = document.getElementById('valorEntradaDisplay');
+
+        const taxaJurosPrincipalEl = document.getElementById('taxaJurosPrincipal');
+        const taxaJurosPrincipalSliderEl = document.getElementById('taxaJurosPrincipalSlider');
+        const taxaJurosPrincipalDisplaySpan = document.getElementById('taxaJurosPrincipalDisplay');
+        
+        const prazoMesesEl = document.getElementById('prazoMeses');
+        const prazoMesesSliderEl = document.getElementById('prazoMesesSlider');
+        const prazoMesesDisplaySpan = document.getElementById('prazoMesesDisplay');
+
+        const sistemaAmortizacaoEl = document.getElementById('sistemaAmortizacao');
+        const calcularBtn = document.getElementById('calcularBtn');
+        const resultadosDiv = document.getElementById('resultadosDiv');
+        const mensagemErroDiv = document.getElementById('mensagemErro');
+        const mensagemErroTextoSpan = document.getElementById('mensagemErroTexto');
+
+        // Elementos DOM para Resultados Principais
+        const sistemaSelecionadoInfoSpan = document.getElementById('sistemaSelecionadoInfo');
+        const taxaPrincipalInfoSpan = document.getElementById('taxaPrincipalInfo');
+        const valorParcelaInicialSpan = document.getElementById('valorParcelaInicial');
+        const valorParcelaFinalSpan = document.getElementById('valorParcelaFinal');
+        const parcelaFinalContainer = document.getElementById('parcelaFinalContainer');
+        const totalFinanciadoSpan = document.getElementById('totalFinanciado');
+        const totalJurosSpan = document.getElementById('totalJuros');
+        const cetAproximadoSpan = document.getElementById('cetAproximado');
+        const custoAVistaSpan = document.getElementById('custoAVista');
+        const montanteAcumuladoSpan = document.getElementById('montanteAcumulado');
+        const diferencaCustoSpan = document.getElementById('diferencaCusto');
+        const tabelaAmortizacaoBody = document.getElementById('tabelaAmortizacaoBody');
+
+        // Elementos DOM para Comparativo de Bancos
+        const addBancoBtn = document.getElementById('addBancoBtn');
+        const bancosAdicionaisContainer = document.getElementById('bancosAdicionaisContainer');
+        const comparativoBancosDiv = document.getElementById('comparativoBancosDiv');
+        const tabelaComparativoBancosBody = document.getElementById('tabelaComparativoBancosBody');
+        const colParcelaFinalSac = document.getElementById('colParcelaFinalSac');
+
+
+        let comparativoChart, evolucaoChart, comparativoBancosChart;
+        let bancoIdCounter = 0;
+
+        function formatarMoeda(valor, comSimbolo = true) {
+            if (isNaN(valor) || valor === null) return comSimbolo ? 'R$ 0,00' : '0,00';
+            return valor.toLocaleString('pt-BR', { 
+                style: comSimbolo ? 'currency' : 'decimal', 
+                currency: 'BRL', 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            });
+        }
+        
+        function formatarTaxa(valor) {
+             if (isNaN(valor) || valor === null) return '0,00%';
+             return valor.toFixed(2).replace('.', ',') + '%';
+        }
+
+        function formatarMeses(valor) {
+            if (isNaN(valor) || valor === null) return '0';
+            return Math.round(valor).toString();
+        }
+
+
+        function exibirErro(mensagem) {
+            mensagemErroTextoSpan.textContent = mensagem;
+            mensagemErroDiv.classList.remove('hidden');
+            resultadosDiv.classList.add('hidden');
+            comparativoBancosDiv.classList.add('hidden');
+        }
+
+        function limparErro() {
+            mensagemErroDiv.classList.add('hidden');
+            mensagemErroTextoSpan.textContent = '';
+        }
+
+        function adicionarCampoBanco() {
+            bancoIdCounter++;
+            const div = document.createElement('div');
+            div.classList.add('bank-entry', 'p-3', 'bg-white', 'rounded-md', 'shadow-sm', 'border', 'border-slate-200');
+            div.innerHTML = `
+                <input type="text" placeholder="Nome do Banco ${bancoIdCounter} (Opcional)" class="banco-nome-adicional input-spinner block w-full rounded-lg border-slate-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-300 focus:ring-opacity-50 p-2 text-sm">
+                <input type="number" step="0.01" placeholder="Taxa %" class="banco-taxa-adicional input-spinner block w-24 rounded-lg border-slate-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-300 focus:ring-opacity-50 p-2 text-sm" required>
+                <button type="button" class="remover-banco-btn bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md text-sm transition duration-150 ease-in-out">&times;</button>
+            `;
+            bancosAdicionaisContainer.appendChild(div);
+            div.querySelector('.remover-banco-btn').addEventListener('click', function() {
+                this.parentElement.remove();
+                calcularTodasSimulacoes(); // Recalcula ao remover um banco
+            });
+        }
+        addBancoBtn.addEventListener('click', adicionarCampoBanco);
+
+
+        function calcularDetalhesFinanciamento(valorFinanciado, taxaJurosDecimal, prazoMeses, sistemaAmortizacao) {
+            let parcelasDetalhes = [];
+            let parcelaInicialCalc, parcelaFinalCalc;
+            let totalJurosPagoCalc = 0;
+
+            // Adicionar validação para prazoMeses muito baixo que pode causar divisão por zero ou valores irreais
+            if (prazoMeses <= 0) {
+                return { parcelasDetalhes: [], parcelaInicialCalc: 0, parcelaFinalCalc: 0, totalJurosPagoCalc: 0, totalPagoFinanciamento: 0, erro: "Prazo deve ser maior que zero." };
+            }
+            // Adicionar validação para valorFinanciado negativo ou zero
+            if (valorFinanciado <= 0) {
+                 return { parcelasDetalhes: [], parcelaInicialCalc: 0, parcelaFinalCalc: 0, totalJurosPagoCalc: 0, totalPagoFinanciamento: 0, erro: "Valor a financiar deve ser positivo." };
+            }
+
+
+            if (sistemaAmortizacao === 'price') {
+                let parcelaMensalPrice;
+                if (taxaJurosDecimal === 0) {
+                    parcelaMensalPrice = valorFinanciado / prazoMeses;
+                } else {
+                    // Denominador da fórmula Price
+                    const denominador = Math.pow(1 + taxaJurosDecimal, prazoMeses) - 1;
+                    if (denominador === 0) { // Evita divisão por zero se (1+i)^n = 1, o que é raro com i > 0
+                         return { parcelasDetalhes: [], parcelaInicialCalc: 0, parcelaFinalCalc: 0, totalJurosPagoCalc: 0, totalPagoFinanciamento: 0, erro: "Cálculo instável com os juros e prazo fornecidos (Price)." };
+                    }
+                    parcelaMensalPrice = valorFinanciado * (taxaJurosDecimal * Math.pow(1 + taxaJurosDecimal, prazoMeses)) / denominador;
+                }
+                parcelaInicialCalc = parcelaMensalPrice;
+                parcelaFinalCalc = parcelaMensalPrice;
+
+                let saldoDevedorAtual = valorFinanciado;
+                for (let i = 1; i <= prazoMeses; i++) {
+                    const jurosMes = saldoDevedorAtual * taxaJurosDecimal;
+                    const amortizacaoMes = parcelaMensalPrice - jurosMes;
+                    saldoDevedorAtual -= amortizacaoMes;
+                    totalJurosPagoCalc += jurosMes;
+                    parcelasDetalhes.push({
+                        mes: i, parcela: parcelaMensalPrice, juros: jurosMes, amortizacao: amortizacaoMes,
+                        saldoDevedor: saldoDevedorAtual > 0.005 ? saldoDevedorAtual : 0 // Ajuste para arredondamento
+                    });
+                }
+            } else if (sistemaAmortizacao === 'sac') {
+                const amortizacaoConstante = valorFinanciado / prazoMeses;
+                let saldoDevedorAtual = valorFinanciado;
+                for (let i = 1; i <= prazoMeses; i++) {
+                    const jurosMes = saldoDevedorAtual * taxaJurosDecimal;
+                    const parcelaMesSAC = amortizacaoConstante + jurosMes;
+                    if (i === 1) parcelaInicialCalc = parcelaMesSAC;
+                    if (i === prazoMeses) parcelaFinalCalc = parcelaMesSAC;
+                    saldoDevedorAtual -= amortizacaoConstante;
+                    totalJurosPagoCalc += jurosMes;
+                    parcelasDetalhes.push({
+                        mes: i, parcela: parcelaMesSAC, juros: jurosMes, amortizacao: amortizacaoConstante,
+                        saldoDevedor: saldoDevedorAtual > 0.005 ? saldoDevedorAtual : 0 // Ajuste para arredondamento
+                    });
+                }
+            }
+            const totalPagoFinanciamento = parcelasDetalhes.reduce((acc, p) => acc + p.parcela, 0);
+            return { parcelasDetalhes, parcelaInicialCalc, parcelaFinalCalc, totalJurosPagoCalc, totalPagoFinanciamento };
+        }
+
+
+        function calcularTodasSimulacoes() {
+            limparErro();
+
+            const valorBem = parseFloat(valorBemEl.value);
+            const valorEntrada = parseFloat(valorEntradaEl.value);
+            const taxaJurosPrincipalPerc = parseFloat(taxaJurosPrincipalEl.value);
+            const prazoMeses = parseInt(prazoMesesEl.value);
+            const sistemaAmortizacao = sistemaAmortizacaoEl.value;
+
+            if (isNaN(valorBem) || valorBem <= 0) { exibirErro('O valor do bem deve ser positivo.'); return; }
+            if (isNaN(valorEntrada) || valorEntrada < 0) { exibirErro('O valor da entrada deve ser positivo ou zero.'); return; }
+            if (valorEntrada > valorBem) { exibirErro('A entrada não pode ser maior que o valor do bem.'); return; } // Alterado para > em vez de >=
+            if (isNaN(taxaJurosPrincipalPerc) || taxaJurosPrincipalPerc < 0) { exibirErro('A taxa de juros principal deve ser positiva ou zero.'); return; }
+            if (isNaN(prazoMeses) || prazoMeses <= 0) { exibirErro('O prazo deve ser um inteiro positivo.'); return; }
+
+            const valorFinanciado = valorBem - valorEntrada;
+             if (valorFinanciado <= 0 && valorEntrada === valorBem) { // Compra à vista, sem financiamento
+                // Limpar resultados de financiamento e mostrar mensagem apropriada ou apenas o custo à vista
+                taxaPrincipalInfoSpan.textContent = taxaJurosPrincipalPerc.toFixed(2);
+                sistemaSelecionadoInfoSpan.textContent = sistemaAmortizacao === 'price' ? 'Tabela Price' : 'SAC';
+                valorParcelaInicialSpan.textContent = formatarMoeda(0);
+                parcelaFinalContainer.classList.add('hidden');
+                totalFinanciadoSpan.textContent = formatarMoeda(0);
+                totalJurosSpan.textContent = formatarMoeda(0);
+                cetAproximadoSpan.textContent = '0,00% a.a.';
+                custoAVistaSpan.textContent = formatarMoeda(valorBem);
+                montanteAcumuladoSpan.textContent = formatarMoeda(valorBem); // Custo total é o valor do bem
+                diferencaCustoSpan.textContent = formatarMoeda(0);
+
+                renderizarTabelaAmortizacao([]);
+                atualizarGraficoComparativo(valorBem, valorBem); // Gráfico mostra ambos iguais
+                atualizarGraficoEvolucao([]);
+                resultadosDiv.classList.remove('hidden');
+                
+                // Limpar e ocultar comparativo de bancos, pois não há financiamento
+                tabelaComparativoBancosBody.innerHTML = '';
+                if (comparativoBancosChart) comparativoBancosChart.destroy();
+                comparativoBancosDiv.classList.add('hidden');
+                return;
+            }
+            if (valorFinanciado <= 0) { // Caso de entrada maior que o bem, mas não exatamente igual (já coberto acima)
+                exibirErro('Valor a financiar é zero ou negativo devido à entrada. Ajuste os valores.'); return;
+            }
+            
+            const taxaJurosPrincipalDecimal = taxaJurosPrincipalPerc / 100;
+            const simPrincipal = calcularDetalhesFinanciamento(valorFinanciado, taxaJurosPrincipalDecimal, prazoMeses, sistemaAmortizacao);
+            if (simPrincipal.erro) { exibirErro(simPrincipal.erro); return;}
+            
+            taxaPrincipalInfoSpan.textContent = taxaJurosPrincipalPerc.toFixed(2);
+            sistemaSelecionadoInfoSpan.textContent = sistemaAmortizacao === 'price' ? 'Tabela Price' : 'SAC';
+            valorParcelaInicialSpan.textContent = formatarMoeda(simPrincipal.parcelaInicialCalc);
+            if (sistemaAmortizacao === 'sac') {
+                parcelaFinalContainer.classList.remove('hidden');
+                valorParcelaFinalSpan.textContent = formatarMoeda(simPrincipal.parcelaFinalCalc);
+                colParcelaFinalSac.classList.remove('hidden');
+            } else {
+                parcelaFinalContainer.classList.add('hidden');
+                colParcelaFinalSac.classList.add('hidden');
+            }
+            totalFinanciadoSpan.textContent = formatarMoeda(valorFinanciado);
+            totalJurosSpan.textContent = formatarMoeda(simPrincipal.totalJurosPagoCalc);
+            
+            const montanteAcumuladoPrincipal = valorEntrada + simPrincipal.totalPagoFinanciamento;
+            const custoAVista = valorBem;
+            const diferencaPrincipal = montanteAcumuladoPrincipal - custoAVista;
+            const taxaAnualEfetivaPrincipal = (Math.pow(1 + taxaJurosPrincipalDecimal, 12) - 1) * 100;
+
+            cetAproximadoSpan.textContent = taxaAnualEfetivaPrincipal.toFixed(2) + '% a.a.';
+            custoAVistaSpan.textContent = formatarMoeda(custoAVista);
+            montanteAcumuladoSpan.textContent = formatarMoeda(montanteAcumuladoPrincipal);
+            diferencaCustoSpan.textContent = formatarMoeda(diferencaPrincipal);
+
+            renderizarTabelaAmortizacao(simPrincipal.parcelasDetalhes);
+            atualizarGraficoComparativo(custoAVista, montanteAcumuladoPrincipal);
+            atualizarGraficoEvolucao(simPrincipal.parcelasDetalhes);
+            resultadosDiv.classList.remove('hidden');
+
+            const resultadosBancos = [];
+            resultadosBancos.push({
+                nome: `Principal (${taxaJurosPrincipalPerc.toFixed(2)}%)`,
+                taxa: taxaJurosPrincipalPerc,
+                parcelaInicial: simPrincipal.parcelaInicialCalc,
+                parcelaFinal: simPrincipal.parcelaFinalCalc,
+                totalJuros: simPrincipal.totalJurosPagoCalc,
+                custoTotalFinanciado: montanteAcumuladoPrincipal
+            });
+
+            const camposBancos = bancosAdicionaisContainer.querySelectorAll('.bank-entry');
+            let erroBancoAdicional = false;
+            camposBancos.forEach((campo, index) => {
+                const nomeBancoEl = campo.querySelector('.banco-nome-adicional');
+                const taxaBancoEl = campo.querySelector('.banco-taxa-adicional');
+                
+                const nomeBanco = nomeBancoEl.value.trim() || `Taxa Adicional ${index + 1}`;
+                const taxaBancoPerc = parseFloat(taxaBancoEl.value);
+
+                if (isNaN(taxaBancoPerc) || taxaBancoPerc < 0) {
+                    exibirErro(`Taxa inválida para "${nomeBanco}". Insira um valor positivo ou zero.`);
+                    taxaBancoEl.classList.add('border-red-500', 'ring-red-500');
+                    erroBancoAdicional = true;
+                    return;
+                }
+                taxaBancoEl.classList.remove('border-red-500', 'ring-red-500');
+
+                const taxaBancoDecimal = taxaBancoPerc / 100;
+                const simAdicional = calcularDetalhesFinanciamento(valorFinanciado, taxaBancoDecimal, prazoMeses, sistemaAmortizacao);
+                 if (simAdicional.erro) {
+                    exibirErro(`Erro ao calcular para "${nomeBanco}": ${simAdicional.erro}`);
+                    erroBancoAdicional = true;
+                    return;
+                }
+                const montanteAcumuladoAdicional = valorEntrada + simAdicional.totalPagoFinanciamento;
+                
+                resultadosBancos.push({
+                    nome: `${nomeBanco} (${taxaBancoPerc.toFixed(2)}%)`,
+                    taxa: taxaBancoPerc,
+                    parcelaInicial: simAdicional.parcelaInicialCalc,
+                    parcelaFinal: simAdicional.parcelaFinalCalc,
+                    totalJuros: simAdicional.totalJurosPagoCalc,
+                    custoTotalFinanciado: montanteAcumuladoAdicional
+                });
+            });
+            
+            if (erroBancoAdicional) {
+                 comparativoBancosDiv.classList.add('hidden');
+                 return;
+            }
+
+            if (resultadosBancos.length > 0) {
+                renderizarTabelaComparativoBancos(resultadosBancos, sistemaAmortizacao);
+                atualizarGraficoComparativoBancos(resultadosBancos);
+                comparativoBancosDiv.classList.remove('hidden');
+            } else {
+                comparativoBancosDiv.classList.add('hidden');
+            }
+        }
+        // O botão de calcular principal não é mais estritamente necessário se os sliders atualizam tudo,
+        // mas pode ser mantido para um recálculo explícito ou se o usuário preferir.
+        // Por ora, os sliders já chamam calcularTodasSimulacoes().
+        calcularBtn.addEventListener('click', calcularTodasSimulacoes);
+
+
+        function renderizarTabelaAmortizacao(detalhes) {
+            tabelaAmortizacaoBody.innerHTML = '';
+            detalhes.forEach(p => {
+                const row = `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${p.mes}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${formatarMoeda(p.parcela)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600">${formatarMoeda(p.juros)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600">${formatarMoeda(p.amortizacao)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${formatarMoeda(p.saldoDevedor)}</td>
+                    </tr>`;
+                tabelaAmortizacaoBody.innerHTML += row;
+            });
+        }
+
+        function renderizarTabelaComparativoBancos(resultados, sistema) {
+            tabelaComparativoBancosBody.innerHTML = '';
+            resultados.forEach(b => {
+                const row = document.createElement('tr');
+                let parcelaFinalHTML = '';
+                if (sistema === 'sac') {
+                    parcelaFinalHTML = `<td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${formatarMoeda(b.parcelaFinal)}</td>`;
+                }
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-800">${b.nome}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${b.taxa.toFixed(2)}%</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-700">${formatarMoeda(b.parcelaInicial)}</td>
+                    ${parcelaFinalHTML}
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600">${formatarMoeda(b.totalJuros)}</td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-sky-700 font-semibold">${formatarMoeda(b.custoTotalFinanciado)}</td>
+                `;
+                tabelaComparativoBancosBody.appendChild(row);
+            });
+        }
+        
+        function atualizarGraficoComparativo(valCustoAVista, valCustoFinanciado) {
+            const ctx = document.getElementById('comparativoGraficoCanvas').getContext('2d');
+            if (comparativoChart) comparativoChart.destroy();
+            comparativoChart = new Chart(ctx, { 
+                type: 'bar', data: { labels: ['Custo à Vista', 'Custo Financiado (Principal)'], datasets: [{ label: 'Custo Total (R$)', data: [valCustoAVista, valCustoFinanciado], backgroundColor: ['rgba(22, 163, 74, 0.7)', 'rgba(220, 38, 38, 0.7)'], borderColor: ['rgba(21, 128, 61, 1)', 'rgba(185, 28, 28, 1)'], borderWidth: 1, borderRadius: 4, barPercentage: 0.6, categoryPercentage: 0.7 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Valor (R$)', font: { size: 14, family: 'Inter' }, color: '#475569' }, ticks: { callback: value => formatarMoeda(value), font: { family: 'Inter' }, color: '#475569' }, grid: { color: '#e2e8f0' } }, x: { title: { display: true, text: 'Modalidade de Compra', font: { size: 14, family: 'Inter' }, color: '#475569' }, ticks: { font: { family: 'Inter', size: 12 }, color: '#475569' }, grid: { display: false } } }, plugins: { legend: { display: false }, title: { display: true, text: 'Comparativo de Custo Total (Simulação Principal)', font: { size: 18, weight: '600', family: 'Inter' }, color: '#1e293b', padding: { top: 10, bottom: 20 } }, tooltip: { backgroundColor: 'rgba(0,0,0,0.85)', titleFont: { size: 14, weight: 'bold', family: 'Inter' }, bodyFont: { size: 12, family: 'Inter' }, padding: 12, cornerRadius: 6, displayColors: false, callbacks: { label: c => `${c.label || ''}: ${formatarMoeda(c.parsed.y)}` } } }, animation: { duration: 800, easing: 'easeInOutQuart' } }
+            });
+        }
+
+        function atualizarGraficoEvolucao(parcelasData) {
+            const ctx = document.getElementById('evolucaoFinanciamentoCanvas').getContext('2d');
+            if (evolucaoChart) evolucaoChart.destroy();
+            if (!parcelasData || parcelasData.length === 0) { // Não desenha gráfico se não houver dados
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Limpa o canvas
+                return;
+            }
+            evolucaoChart = new Chart(ctx, { 
+                type: 'line', data: { labels: parcelasData.map(p => `Mês ${p.mes}`), datasets: [ { label: 'Saldo Devedor', data: parcelasData.map(p => p.saldoDevedor), borderColor: 'rgba(239, 68, 68, 1)', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.1 }, { label: 'Juros Pagos (Acum.)', data: parcelasData.reduce((acc, p, i) => { acc.push((i > 0 ? acc[i-1] : 0) + p.juros); return acc; }, []), borderColor: 'rgba(245, 158, 11, 1)', backgroundColor: 'rgba(245, 158, 11, 0.1)', fill: true, tension: 0.1 }, { label: 'Principal Pago (Acum.)', data: parcelasData.reduce((acc, p, i) => { acc.push((i > 0 ? acc[i-1] : 0) + p.amortizacao); return acc; }, []), borderColor: 'rgba(34, 197, 94, 1)', backgroundColor: 'rgba(34, 197, 94, 0.1)', fill: true, tension: 0.1 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Valor (R$)', font: { size: 14, family: 'Inter' }, color: '#475569' }, ticks: { callback: value => formatarMoeda(value), font: { family: 'Inter' }, color: '#475569' }, grid: { color: '#e2e8f0' } }, x: { title: { display: true, text: 'Meses do Financiamento', font: { size: 14, family: 'Inter' }, color: '#475569' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#475569', autoSkip: true, maxTicksLimit: parseInt(prazoMesesEl.value) > 60 ? 12 : 20 }, grid: { display: false } } }, plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' }}}, title: { display: true, text: 'Evolução do Saldo Devedor, Juros e Amortização (Simulação Principal)', font: { size: 18, weight: '600', family: 'Inter' }, color: '#1e293b', padding: { top: 10, bottom: 20 } }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(0,0,0,0.85)', titleFont: { size: 14, weight: 'bold', family: 'Inter' }, bodyFont: { size: 12, family: 'Inter' }, padding: 12, cornerRadius: 6, callbacks: { label: c => `${c.dataset.label || ''}: ${formatarMoeda(c.parsed.y)}` } } }, animation: { duration: 800, easing: 'easeInOutQuart' } }
+            });
+        }
+
+        function atualizarGraficoComparativoBancos(resultadosBancos) {
+            const ctx = document.getElementById('graficoComparativoBancosCanvas').getContext('2d');
+            if (comparativoBancosChart) comparativoBancosChart.destroy();
+             if (!resultadosBancos || resultadosBancos.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                return;
+            }
+            const labels = resultadosBancos.map(b => b.nome);
+            const dataCustoTotal = resultadosBancos.map(b => b.custoTotalFinanciado);
+            const backgroundColors = resultadosBancos.map((_, index) => {
+                const colors = [ 'rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(234, 179, 8, 0.7)', 'rgba(139, 92, 246, 0.7)', 'rgba(236, 72, 153, 0.7)', 'rgba(249, 115, 22, 0.7)' ];
+                return colors[index % colors.length];
+            });
+             const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+            comparativoBancosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Custo Total Financiado (R$)', data: dataCustoTotal, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1, borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, title: { display: true, text: 'Custo Total Financiado (R$)', font: { size: 14, family: 'Inter' }, color: '#475569' }, ticks: { callback: value => formatarMoeda(value), font: { family: 'Inter' }, color: '#475569' }, grid: { color: '#e2e8f0' } }, y: { ticks: { font: { family: 'Inter', size: 11 }, color: '#475569' }, grid: { display: false } } }, plugins: { legend: { display: false }, title: { display: true, text: 'Comparativo de Custo Total por Banco/Taxa', font: { size: 18, weight: '600', family: 'Inter' }, color: '#1e293b', padding: { top: 10, bottom: 20 } }, tooltip: { backgroundColor: 'rgba(0,0,0,0.85)', titleFont: { size: 14, weight: 'bold', family: 'Inter' }, bodyFont: { size: 12, family: 'Inter' }, padding: 12, cornerRadius: 6, displayColors: false, callbacks: { label: c => `${c.dataset.label || ''}: ${formatarMoeda(c.parsed.x)}` } } }, animation: { duration: 800, easing: 'easeInOutQuart' } }
+            });
+        }
+        
+        // --- Funções de Sincronização e Inicialização dos Sliders ---
+        function setupSliderSync(inputId, sliderId, displayId, formatFunction, isCurrency = true, dependentConfig = null) {
+            const inputEl = document.getElementById(inputId);
+            const sliderEl = document.getElementById(sliderId);
+            const displaySpan = document.getElementById(displayId);
+
+            // Função para atualizar o display e o outro input
+            const updateValues = (sourceElement) => {
+                let value = parseFloat(sourceElement.value);
+                if (isNaN(value)) value = parseFloat(sourceElement.min) || 0; // Default to min or 0 if NaN
+
+                // Garante que o valor está dentro dos limites min/max do slider/input
+                const min = parseFloat(sourceElement.min);
+                const max = parseFloat(sourceElement.max);
+                if (value < min) value = min;
+                if (value > max) value = max;
+                
+                if (sourceElement.type === 'range') {
+                    inputEl.value = value.toFixed(isCurrency ? 2 : (inputId === 'taxaJurosPrincipal' ? 2 : 0) ); // Precisão para taxa
+                } else {
+                    sliderEl.value = value;
+                }
+                displaySpan.textContent = formatFunction(value);
+
+                // Lógica para dependências (ex: valorEntrada depende de valorBem)
+                if (dependentConfig && dependentConfig.targetSliderId === 'valorEntradaSlider' && inputId === 'valorBem') {
+                    const entradaSlider = document.getElementById(dependentConfig.targetSliderId);
+                    const entradaInput = document.getElementById(dependentConfig.targetInputId);
+                    const entradaDisplay = document.getElementById(dependentConfig.targetDisplayId);
+                    
+                    const novoMaxEntrada = value; // Novo valor do bem é o novo max da entrada
+                    entradaSlider.max = novoMaxEntrada;
+                    entradaInput.max = novoMaxEntrada;
+
+                    if (parseFloat(entradaInput.value) > novoMaxEntrada) {
+                        entradaInput.value = novoMaxEntrada.toFixed(2);
+                        entradaSlider.value = novoMaxEntrada;
+                        entradaDisplay.textContent = formatarMoeda(novoMaxEntrada);
+                    }
+                }
+                // Só recalcula se os resultados já estiverem visíveis ou se for uma mudança explícita
+                if (!resultadosDiv.classList.contains('hidden') || !comparativoBancosDiv.classList.contains('hidden') || sourceElement.id === 'calcularBtn') {
+                     calcularTodasSimulacoes();
+                }
+            };
+
+            sliderEl.addEventListener('input', () => updateValues(sliderEl));
+            inputEl.addEventListener('input', () => updateValues(inputEl));
+
+            // Inicializa o display e o slider com o valor do input numérico
+            const initialValue = parseFloat(inputEl.value);
+            sliderEl.value = initialValue;
+            displaySpan.textContent = formatFunction(initialValue);
+            if (dependentConfig && dependentConfig.targetSliderId === 'valorEntradaSlider' && inputId === 'valorBem') {
+                 document.getElementById(dependentConfig.targetSliderId).max = initialValue;
+                 document.getElementById(dependentConfig.targetInputId).max = initialValue;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSliderSync('valorBem', 'valorBemSlider', 'valorBemDisplay', formatarMoeda, true, {
+                targetSliderId: 'valorEntradaSlider', 
+                targetInputId: 'valorEntrada',
+                targetDisplayId: 'valorEntradaDisplay'
+            });
+            setupSliderSync('valorEntrada', 'valorEntradaSlider', 'valorEntradaDisplay', formatarMoeda);
+            setupSliderSync('taxaJurosPrincipal', 'taxaJurosPrincipalSlider', 'taxaJurosPrincipalDisplay', formatarTaxa, false);
+            setupSliderSync('prazoMeses', 'prazoMesesSlider', 'prazoMesesDisplay', formatarMeses, false);
+            
+            // Atualiza o max do slider de entrada com base no valor inicial do bem
+            const initialValorBem = parseFloat(valorBemEl.value);
+            valorEntradaSliderEl.max = initialValorBem;
+            valorEntradaEl.max = initialValorBem;
+             if(parseFloat(valorEntradaEl.value) > initialValorBem) {
+                valorEntradaEl.value = initialValorBem;
+                valorEntradaSliderEl.value = initialValorBem;
+                valorEntradaDisplaySpan.textContent = formatarMoeda(initialValorBem);
+            }
+
+
+            adicionarCampoBanco(); 
+            calcularTodasSimulacoes();
+        });
+        
+        // Listener para o select do sistema de amortização
+        sistemaAmortizacaoEl.addEventListener('change', () => {
+            if (!resultadosDiv.classList.contains('hidden') || !comparativoBancosDiv.classList.contains('hidden')) {
+                calcularTodasSimulacoes();
+            }
+        });
+
+
+    </script>
+</body>
+</html>
